@@ -1,5 +1,16 @@
 'use strict';
 
+// The page remains readable if the optional animation bundle cannot load.
+const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+function loadMotion() {
+  if (motionPreference.matches) return;
+  import('./animations.js').then(({ initMotion }) => initMotion()).catch(() => {
+    // Native navigation, dialogs and downloads continue to work without motion.
+  });
+}
+loadMotion();
+motionPreference.addEventListener('change', loadMotion);
+
 const menuToggle = document.querySelector('.menu-toggle');
 const mobileNav = document.querySelector('#mobile-nav');
 function closeMenu() {
@@ -14,6 +25,7 @@ menuToggle.addEventListener('click', () => {
   menuToggle.setAttribute('aria-label', expanded ? 'Abrir menú' : 'Cerrar menú');
   mobileNav.classList.toggle('open', !expanded);
   mobileNav.inert = expanded;
+  if (!expanded) document.dispatchEvent(new CustomEvent('aetheria:menu-open'));
 });
 mobileNav.querySelectorAll('a, button').forEach(item => item.addEventListener('click', closeMenu));
 document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
@@ -26,17 +38,27 @@ const galleryFrame = document.querySelector('.gallery-frame');
 const galleryButtons = [...document.querySelectorAll('.gallery-controls button')];
 function setGalleryView(view) {
   galleryFrame.dataset.galleryView = view;
+  // Fetch the largest photo only when a visitor explores a close-up.
+  galleryFrame.querySelector('img').sizes = view === 'full'
+    ? '(max-width: 700px) calc(100vw - 32px), 760px'
+    : '1120px';
   galleryButtons.forEach(button => {
     const selected = button.dataset.galleryView === view;
     button.classList.toggle('active', selected);
     button.setAttribute('aria-pressed', String(selected));
   });
+  document.dispatchEvent(new CustomEvent('aetheria:gallery-view'));
 }
 function openDialog(dialog) {
   if (dialog.open) return;
   closeMenu();
   dialog.showModal();
   document.body.classList.add('modal-open');
+  document.dispatchEvent(new CustomEvent('aetheria:dialog-open', { detail: { dialog } }));
+}
+function closeDialog(dialog) {
+  const event = new CustomEvent('aetheria:dialog-close', { detail: { dialog }, cancelable: true });
+  if (document.dispatchEvent(event)) dialog.close();
 }
 document.querySelectorAll('[data-open-gallery]').forEach(button => button.addEventListener('click', () => {
   setGalleryView(button.dataset.view || 'full');
@@ -45,14 +67,16 @@ document.querySelectorAll('[data-open-gallery]').forEach(button => button.addEve
 document.querySelectorAll('[data-open-specs]').forEach(button => button.addEventListener('click', () => openDialog(specsDialog)));
 galleryButtons.forEach(button => button.addEventListener('click', () => setGalleryView(button.dataset.galleryView)));
 document.querySelectorAll('dialog').forEach(dialog => {
-  dialog.querySelector('[data-close-dialog]').addEventListener('click', () => dialog.close());
+  dialog.querySelector('[data-close-dialog]').addEventListener('click', () => closeDialog(dialog));
+  dialog.addEventListener('cancel', event => { event.preventDefault(); closeDialog(dialog); });
   dialog.addEventListener('close', () => {
     if (!document.querySelector('dialog[open]')) document.body.classList.remove('modal-open');
+    document.dispatchEvent(new CustomEvent('aetheria:dialog-dismissed', { detail: { dialog } }));
   });
   dialog.addEventListener('click', event => {
     if (event.target !== dialog) return;
     const rect = dialog.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeDialog(dialog);
   });
 });
 
@@ -65,11 +89,11 @@ const tabs = [...document.querySelectorAll('[data-mode]')];
 const experiencePanel = document.querySelector('#experience-panel');
 const waveLines = document.querySelector('.wave-lines');
 // Abstract waveform: an illustration, not a product measurement.
-for (let i = 0; i < 69; i += 1) waveLines.append(document.createElement('i'));
+for (let i = 0; i < 49; i += 1) waveLines.append(document.createElement('i'));
 function drawWave(mode) {
   const shape = experiences[mode].width;
   [...waveLines.children].forEach((line, index) => {
-    const envelope = Math.pow(1 - Math.abs(index - 34) / 34, 0.85);
+    const envelope = Math.pow(1 - Math.abs(index - 24) / 24, 0.85);
     const oscillation = Math.abs(Math.sin(index * (0.42 + shape * 0.08)) * Math.cos(index * 0.16));
     line.style.setProperty('--height', `${12 + envelope * (65 + oscillation * 150)}px`);
     line.style.setProperty('--opacity', `${0.22 + envelope * 0.75}`);
@@ -85,6 +109,7 @@ function activateTab(tab) {
   experiencePanel.querySelector('h3').textContent = content.title;
   experiencePanel.querySelector('p').textContent = content.text;
   drawWave(tab.dataset.mode);
+  document.dispatchEvent(new CustomEvent('aetheria:mode-change'));
 }
 tabs.forEach((tab, index) => {
   tab.addEventListener('click', () => activateTab(tab));
