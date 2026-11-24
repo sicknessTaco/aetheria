@@ -1,4 +1,11 @@
 /* Motion enhances the static page; content is never hidden by default. */
+.footer-easter-egg{appearance:none;border:0;padding:0;background:none;font:inherit;line-height:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:color .2s,text-decoration-color .2s}
+.footer-easter-egg:hover,.footer-easter-egg:focus-visible{color:var(--purple);text-decoration-color:currentColor}
+.easter-egg-dialog{width:min(390px,calc(100% - 40px));padding:58px 24px 22px;background:#19141e;border-color:#8051a5}
+.easter-egg-dialog>.close-dialog{position:absolute;top:10px;right:10px}
+.easter-egg-frame{aspect-ratio:55/36;overflow:hidden;border-radius:6px;background:#241a2b}
+.easter-egg-frame img{display:block;width:100%;height:100%;object-fit:contain}
+.easter-egg-dialog>p{margin:18px 0 0;color:#c7acd9;text-align:center;font-size:14px;line-height:1.7}
 html{scrollbar-gutter:stable;scroll-padding-top:112px}
 .reading-progress{position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,#9e65e5,#d7bcff);transform:scaleX(0);transform-origin:left;z-index:50;pointer-events:none}
 .site-header{position:sticky;top:0;transition:background .3s,border-color .3s,box-shadow .3s}

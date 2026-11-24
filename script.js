@@ -1,3 +1,5 @@
+import easterEggGif from './assets/aetheria-secret.gif?url';
+
 'use strict';
 
 // The page remains readable if the optional animation bundle cannot load.
@@ -34,6 +36,8 @@ document.addEventListener('click', event => { if (!event.target.closest('.site-h
 
 const galleryDialog = document.querySelector('#gallery-dialog');
 const specsDialog = document.querySelector('#specs-dialog');
+const easterEggDialog = document.querySelector('#easter-egg-dialog');
+const easterEggFrame = easterEggDialog.querySelector('.easter-egg-frame');
 const galleryFrame = document.querySelector('.gallery-frame');
 const galleryButtons = [...document.querySelectorAll('.gallery-controls button')];
 function setGalleryView(view) {
@@ -65,11 +69,21 @@ document.querySelectorAll('[data-open-gallery]').forEach(button => button.addEve
   openDialog(galleryDialog);
 }));
 document.querySelectorAll('[data-open-specs]').forEach(button => button.addEventListener('click', () => openDialog(specsDialog)));
+
+document.querySelector('[data-open-easter-egg]').addEventListener('click', () => {
+  // Keep the GIF out of the initial download and stop it when the dialog closes.
+  const gif = new Image(220, 144);
+  gif.alt = 'Un personaje de anime de cabello rosa moviendo las manos.';
+  gif.src = easterEggGif;
+  easterEggFrame.replaceChildren(gif);
+  openDialog(easterEggDialog);
+});
 galleryButtons.forEach(button => button.addEventListener('click', () => setGalleryView(button.dataset.galleryView)));
 document.querySelectorAll('dialog').forEach(dialog => {
   dialog.querySelector('[data-close-dialog]').addEventListener('click', () => closeDialog(dialog));
   dialog.addEventListener('cancel', event => { event.preventDefault(); closeDialog(dialog); });
   dialog.addEventListener('close', () => {
+    if (dialog === easterEggDialog) easterEggFrame.replaceChildren();
     if (!document.querySelector('dialog[open]')) document.body.classList.remove('modal-open');
     document.dispatchEvent(new CustomEvent('aetheria:dialog-dismissed', { detail: { dialog } }));
   });
